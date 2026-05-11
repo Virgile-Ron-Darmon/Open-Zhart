@@ -4,18 +4,15 @@ Orchestrates data loading, processing, model training, and visualization
 components of the application.
 """
 import logging
-import random
-import time
 import yaml
-#from src.connectors.discord import zhart_bot
-from src.connectors.llm import LLM
+from src.personality.personality import BotPersonality
 import discord
 from discord.ext import commands
 import audioop
 from dotenv import load_dotenv
 import os
 import logging
-from src.tools.logger import logger
+
 
 #log = logger(log_file='Open-Zhart.log', log_level=logging.DEBUG)
 handler = logging.FileHandler(filename='Open-Zhart.log', encoding='utf-8', mode='w')
@@ -32,7 +29,6 @@ class Controller():
         # Path to the configuration file
         config_file = './config.yaml'
         self.load_config(config_file)
-        self.mariadb_c = None
 
     def load_config(self, file_path):
         """
@@ -62,24 +58,18 @@ class Controller():
             #log.log("Default config created and loaded", logging.INFO)
 
         except (yaml.YAMLError, ValueError) as e:
-            #log.log(f"Error loading config: {e}", logging.ERROR)
-            #log.log("Loading default configuration", logging.INFO)
             config = default_config
 
         # database variables
         self.config_host = config.get('Test', '1')
+        self.mode = config.get('Mode', 'cpu')
+        self.model_path = config.get('Model_path', 'cpu')
 
-        
-        
 
     def run(self):
-        zhart_instance = zhart_bot()
-        
 
+        self.Zhart_personality = BotPersonality(self.mode, self.model_path)
 
-class zhart_bot():
-    def __init__(self):
-        
         load_dotenv()
         token =os.getenv('DISCORD_TOKEN')
 
@@ -88,56 +78,29 @@ class zhart_bot():
         intents.members = True
 
         bot = commands.Bot(command_prefix='!', intents = intents)
-        llm = LLM(mode="cpu")
-        llm.start()
+
 
         @bot.event
         async def on_ready():
-            print(f"It's Zhartling Time")
+            print("It's Zhartling Time")
 
         @bot.event
         async def on_message(message):
+            mode = 0
             if message.author == bot.user:
                 return
-            if "zhart" in message.content.lower():
+            if bot.user in message.mentions:
+                mode = 2
+            elif bot.user in message.content.lower():
+                mode = 1
                 # Remove the trigger word so the model doesn't echo it
-                clean_prompt = message.content.lower().replace("zhart", "").strip()
-                
-                if not clean_prompt:
-                    await message.channel.send("Yes?")
-                    return
-
-                reply = llm.chat(
-                    prompt=clean_prompt,
-                    system=(
-                        "Your name is Zhart. "
-                        "Never mention Google, DeepMind, Gemma, or that you are an AI. "
-                        "your personality can be described as nerdy, pathetic, wanting to prove yourself, but always have the upper hand on others"
-                        "You are a reddit moderator, in your spare time and in way of interacting with others"
-                        "Answer the user directly."
-                    )
-                )
+            
+            reply = self.Zhart_personality.message_processor(message=message, mode=mode)
+            print("0=============================")
+            print(reply)
+            print("=============================0")
+            if reply != "":
                 await message.channel.send(reply)
             await bot.process_commands(message)
-        """
-        @bot.event
-        async def on_message(message):
-            print (message.content)
-            if message.author == bot.user:
-                return
-            if "zhart" in message.content.lower():
-                reply = llm.chat(
-                    prompt=message.content,
-                        system=(
-                            "Your name is Zhart. "
-                            "You must never mention Google, DeepMind, Gemma, or that you are an AI or language model. "
-                            "Answer the user's question directly without any introduction or self-description. "
-                            "If asked who you are, say only that you are Zhart, a Discord bot."
-                        )
-                )
-                print(reply)
-                await message.channel.send(f"Hello there. {reply}")
 
-            await bot.process_commands(message)
-"""
         bot.run(token, log_handler=handler, log_level=logging.DEBUG)

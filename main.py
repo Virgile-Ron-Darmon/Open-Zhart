@@ -3,12 +3,8 @@ Main entry point for the financial data analysis system.
 Initializes and runs the controller component to execute
 the complete data analysis pipeline.
 """
-import logging
 from src.controller import Controller
-from src.tools.logger import logger
-
 #log = logger(log_file='Open-Zhart.log', log_level=logging.DEBUG)
-1
 
 def main():
     """
