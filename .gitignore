@@ -5,3 +5,5 @@ src/__pycache__/controller.cpython-314.pyc
 src/connectors/__pycache__/discord.cpython-314.pyc
 src/connectors/__pycache__/llm.cpython-314.pyc
 src/tools/__pycache__/logger.cpython-314.pyc
+Open-Zhart.log
+.gitignore
